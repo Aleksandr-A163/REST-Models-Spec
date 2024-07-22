@@ -1,6 +1,7 @@
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import static helpers.CustomAllureListener.withCustomTemplates;
 
 import static io.restassured.http.ContentType.JSON;
 import static io.restassured.RestAssured.*;
@@ -16,6 +17,7 @@ public class RestTests extends TestBase {
         String authData = "{\"email\": \"eve.holt@reqres.in\", \"password\": \"cityslicka\"}";
 
         given()
+                .filter(withCustomTemplates())
                 .body(authData)
                 .contentType(JSON)
                 .log().uri()
