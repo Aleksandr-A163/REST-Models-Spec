@@ -10,13 +10,14 @@ import static helpers.CustomAllureListener.withCustomTemplates;
 import io.restassured.RestAssured;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
+import static io.restassured.http.ContentType.JSON;
 
 
 import static specs.LoginTestSpec.loginTestReq;
 import static specs.LoginTestSpec.loginTestRes;
 
 
-@Tag("api")
+@Tag("apiTests")
 public class RestTests extends TestBase {
 
     @DisplayName("Успешная авторизация пользователя")
@@ -24,23 +25,22 @@ public class RestTests extends TestBase {
     void successfulLoginTest() {
         final LoginModel login = new LoginModel();
         login.setEmail("eve.holt@reqres.in");
-        login.setPassword("");
+        login.setPassword("pistol");
 
-        LoginModel login1 = step("Запрос на авторизацию", () -> {
+        LoginModel login1 = step("Make Request for Authorization", () -> {
             return given()
-                .spec(loginTestReq)
-                .body(login)
-                .when()
-                .post("https://reqres.in/api/login")
-                .then()
-                .spec(loginTestRes)
-                .extract().as(LoginModel.class);
+                    .spec(loginTestReq)
+                    .body(login)
+                    .when()
+                    .post()
+                    .then()
+                    .spec(loginTestRes)
+                    .extract().as(LoginModel.class);
         });
         step("Check Results", () -> {
             Assertions.assertNotEquals(null, login1.getToken());
             Assertions.assertNotEquals(null, login1.getId());
         });
-
     }
 
     @DisplayName("Некорректная авторизация пользователя")
