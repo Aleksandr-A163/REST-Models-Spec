@@ -4,28 +4,22 @@ import models.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+
 import static io.qameta.allure.Allure.step;
-import static helpers.CustomAllureListener.withCustomTemplates;
-
-import io.restassured.RestAssured;
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
-import static io.restassured.http.ContentType.JSON;
-
-
-import static specs.LoginTestSpec.loginTestReq;
-import static specs.LoginTestSpec.loginTestRes;
+import static org.assertj.core.api.Assertions.assertThat;
+import static specs.ReqresTestSpec.*;
 
 
 @Tag("apiTests")
 public class RestTests extends TestBase {
 
-    @DisplayName("Успешная авторизация пользователя")
+    @DisplayName("Successful user authorization")
     @Test
     void successfulLoginTest() {
         final LoginModel login = new LoginModel();
         login.setEmail("eve.holt@reqres.in");
-        login.setPassword("pistol");
+        login.setPassword("cityslicka");
 
         LoginModel login1 = step("Make Request for Authorization", () -> {
             return given()
@@ -34,115 +28,92 @@ public class RestTests extends TestBase {
                     .when()
                     .post()
                     .then()
-                    .spec(loginTestRes)
+                    .spec(responseWithStatusCode200)
                     .extract().as(LoginModel.class);
         });
         step("Check Results", () -> {
-            Assertions.assertNotEquals(null, login1.getToken());
-            Assertions.assertNotEquals(null, login1.getId());
+            Assertions.assertEquals("QpwL5tke4Pnpja7X4", login1.getToken(), login1.getId());
         });
     }
 
-    @DisplayName("Некорректная авторизация пользователя")
+    @DisplayName("Incorrect user authorization")
     @Test
     void unsuccessfulLoginTest() {
-        String authData = "{\"email\": \"eve.dod@mail.ru\", \"password\": \"cityslicka\"}";
+        final LoginModel login = new LoginModel();
+        login.setEmail("eve.hod@reqres.in");
+        login.setPassword("cityslicka");
 
-        given()
-                .body(authData)
-                .log().uri()
-
-                .when()
-                .post("https://reqres.in/api/login")
-
-                .then()
-                .log().status()
-                .log().body()
-                .statusCode(400);
+        MissingPasswordModel login2 = step("Make request", () -> {
+            return given()
+                    .spec(loginTestReq)
+                    .body(login)
+                    .when()
+                    .post()
+                    .then()
+                    .spec(missingLoginResponseSpec)
+                    .extract().as(MissingPasswordModel.class);
+        });
+        step("Check Results", () -> {
+            Assertions.assertEquals("user not found", login2.getError());
+        });
     }
 
-    @DisplayName("Успешная проверка наличия записи по существующему")
+    @DisplayName("Successful verification of the existence of an entry for an existing user")
     @Test
     void successfulGetLinkInfoTest() {
-        given()
-                .log().uri()
-
-                .when()
-                .get("/unknown")
-
-                .then()
-                .log().status()
-                .log().body()
-                .statusCode(200)
-                .body("data.name", hasItem("cerulean"));
+        SingleUserResponseModel response =
+                step("Send a GET request to receive the material", () ->
+        given(mainPageTestReq)
+        .get("/api/unknown/2")
+        .then()
+                .spec(responseWithStatusCode200)
+                .extract().as(SingleUserResponseModel.class));
+        step("Check the id in the response", () ->
+        assertThat(response.getData().getId()).isEqualTo(2));
     }
 
-    @DisplayName("Негативная проверка наличия несуществующего пользователя")
+    @DisplayName("Negative verification of the presence of a non-existent user")
     @Test
     void unsuccessfulGetLinkInfoTest() {
-        given()
-                .log().uri()
-
-                .when()
-                .get("/users/91")
-
+        step("Send a GET request to receive the material", () ->
+        given(mainPageTestReq)
+                .get("/api/users/91")
                 .then()
-                .log().status()
-                .log().body()
-                .statusCode(404);
+                .spec(responseWithStatusCode404));
     }
 
 
-    @DisplayName("Успешное обновление данных о пользоваателе")
+    @DisplayName("Successful update of user data")
     @Test
     void successfulCheckUserUpdatedInfoTest() {
-        String requestBody = "{ \"name\": \"morpheus\", \"job\": \"zion resident\" }";
-        given()
-                .body(requestBody)
-                .contentType(JSON)
-                .log().uri()
-
-                .when()
-                .put("https://reqres.in/api/users/2")
-
-                .then()
-                .log().status()
-                .log().body()
-                .statusCode(200)
-                .body("name", equalTo("morpheus"))
-                .body("job", equalTo("zion resident"))
-                .body("updatedAt", notNullValue());
+        UpdateUserBodyModel userUpdate = new UpdateUserBodyModel();
+        userUpdate.setName("morpheus");
+        userUpdate.setJob("zion resident");
+        UpdateUserResponseModel response =
+                step("Send a PUT request to update the user", () ->
+            given(mainPageTestReq)
+                    .body(userUpdate)
+                    .when()
+                    .put("/api/users/2")
+                    .then()
+                    .spec(responseWithStatusCode200)
+                    .extract().as(UpdateUserResponseModel.class));
+        step("Check the name in the response", () ->
+            assertThat(response.getName()).isEqualTo("morpheus"));
+        step("Check the work in the response", () ->
+            assertThat(response.getJob()).isEqualTo("zion resident"));
     }
 
-    @DisplayName("Успешное получение пользователя по id")
-    @Test
-    void getSingleUserTest() {
 
-        given()
-                .log().uri()
 
-                .when()
-                .get("/users/3")
-
-                .then()
-                .log().status()
-                .log().body()
-                .statusCode(200)
-                .body("data.id", is(3));
-    }
-
-    @DisplayName("Успешное удаление пользователя")
+    @DisplayName("Successful user deletion")
     @Test
     public void deleteUserTest() {
-
-        given()
-                .log().uri()
-                .when()
+        step("Send a DELETE request to delete a user", () ->
+        given(mainPageTestReq)
                 .delete("api/users/5")
                 .then()
-                .log().status()
-                .log().body()
-                .statusCode(204);
+                .spec(responseWithStatusCode204));
     }
 
 }
