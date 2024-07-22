@@ -1,11 +1,19 @@
+package tests;
+
+import models.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import static io.qameta.allure.Allure.step;
 import static helpers.CustomAllureListener.withCustomTemplates;
 
-import static io.restassured.http.ContentType.JSON;
-import static io.restassured.RestAssured.*;
+import io.restassured.RestAssured;
+import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
+
+
+import static specs.LoginTestSpec.loginTestReq;
+import static specs.LoginTestSpec.loginTestRes;
 
 
 @Tag("api")
@@ -14,22 +22,25 @@ public class RestTests extends TestBase {
     @DisplayName("Успешная авторизация пользователя")
     @Test
     void successfulLoginTest() {
-        String authData = "{\"email\": \"eve.holt@reqres.in\", \"password\": \"cityslicka\"}";
+        final LoginModel login = new LoginModel();
+        login.setEmail("eve.holt@reqres.in");
+        login.setPassword("");
 
-        given()
-                .filter(withCustomTemplates())
-                .body(authData)
-                .contentType(JSON)
-                .log().uri()
-
+        LoginModel login1 = step("Запрос на авторизацию", () -> {
+            return given()
+                .spec(loginTestReq)
+                .body(login)
                 .when()
                 .post("https://reqres.in/api/login")
-
                 .then()
-                .log().status()
-                .log().body()
-                .statusCode(200)
-                .body("token", is("QpwL5tke4Pnpja7X4"));
+                .spec(loginTestRes)
+                .extract().as(LoginModel.class);
+        });
+        step("Check Results", () -> {
+            Assertions.assertNotEquals(null, login1.getToken());
+            Assertions.assertNotEquals(null, login1.getId());
+        });
+
     }
 
     @DisplayName("Некорректная авторизация пользователя")
@@ -66,7 +77,7 @@ public class RestTests extends TestBase {
                 .body("data.name", hasItem("cerulean"));
     }
 
-    @DisplayName("Негативная проверка наличия несущкствующего пользователя")
+    @DisplayName("Негативная проверка наличия несуществующего пользователя")
     @Test
     void unsuccessfulGetLinkInfoTest() {
         given()
