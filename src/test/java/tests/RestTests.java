@@ -64,7 +64,7 @@ public class RestTests extends TestBase {
         SingleUserResponseModel response =
                 step("Send a GET request to receive the material", () ->
         given(mainPageTestReq)
-        .get("/api/unknown/2")
+        .get("/unknown/2")
         .then()
                 .spec(responseWithStatusCode200)
                 .extract().as(SingleUserResponseModel.class));
@@ -77,7 +77,7 @@ public class RestTests extends TestBase {
     void unsuccessfulGetLinkInfoTest() {
         step("Send a GET request to receive the material", () ->
         given(mainPageTestReq)
-                .get("/api/users/91")
+                .get("/users/91")
                 .then()
                 .spec(responseWithStatusCode404));
     }
@@ -94,7 +94,7 @@ public class RestTests extends TestBase {
             given(mainPageTestReq)
                     .body(userUpdate)
                     .when()
-                    .put("/api/users/2")
+                    .put("/users/2")
                     .then()
                     .spec(responseWithStatusCode200)
                     .extract().as(UpdateUserResponseModel.class));
@@ -111,7 +111,7 @@ public class RestTests extends TestBase {
     public void deleteUserTest() {
         step("Send a DELETE request to delete a user", () ->
         given(mainPageTestReq)
-                .delete("api/users/5")
+                .delete("/users/5")
                 .then()
                 .spec(responseWithStatusCode204));
     }
